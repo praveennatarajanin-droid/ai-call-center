@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #FCE100;
+  --color-secondary: #B39D00;
+  --color-dark: #121212;
+  --color-darker: #050505;
+  --color-panel: #1A1A1A;
+}
+
+@layer base {
+  body {
+    @apply bg-darker text-neutral-300 antialiased;
+    background-image: 
+      linear-gradient(to right, rgba(252, 225, 0, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(252, 225, 0, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+}
+
+/* Custom scrollbar for dark UI */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #050505; 
+}
+::-webkit-scrollbar-thumb {
+  background: #262626; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #404040; 
+}
