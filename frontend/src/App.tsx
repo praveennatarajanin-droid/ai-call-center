@@ -1,6 +1,9 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { LayoutDashboard, PhoneCall, Users, Database, BarChart3, Settings, PhoneIncoming } from 'lucide-react';
+import { 
+  LayoutDashboard, PhoneCall, Users, BarChart3, 
+  Settings, PhoneIncoming, Bell, Search, User, Activity
+} from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import CallLogs from './pages/CallLogs';
 import Customers from './pages/Customers';
@@ -9,47 +12,58 @@ import Simulator from './pages/Simulator';
 
 const Sidebar = () => {
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: PhoneCall, label: 'Call Logs', path: '/calls' },
-    { icon: Users, label: 'Customers', path: '/customers' },
+    { icon: LayoutDashboard, label: 'Systems', path: '/' },
+    { icon: PhoneCall, label: 'Intelligence', path: '/calls' },
+    { icon: Users, label: 'Directory', path: '/customers' },
     { icon: BarChart3, label: 'Analytics', path: '/analytics' },
     { icon: PhoneIncoming, label: 'Simulator', path: '/simulator' },
   ];
 
   return (
-    <div className="w-64 bg-dark border-r border-slate-800 flex flex-col h-screen">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/30">
-          AI
+    <div className="w-72 bg-black/50 border-r border-white/5 flex flex-col h-screen backdrop-blur-3xl z-20">
+      <div className="p-8 flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-yellow-400 to-yellow-600 flex items-center justify-center text-black font-black text-2xl shadow-xl">
+          N
         </div>
-        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-          NexusCall
-        </span>
+        <div>
+          <span className="text-xl font-bold block leading-none text-white">Nexus</span>
+          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Call Systems</span>
+        </div>
       </div>
       
-      <div className="flex-1 px-4 space-y-2 mt-4">
+      <div className="flex-1 px-4 space-y-1.5 mt-4">
+        <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Core Architecture</p>
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+              `flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-500 group ${
                 isActive 
-                  ? 'bg-primary/10 text-primary border border-primary/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                  ? 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 shadow-lg' 
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`
             }
           >
-            <item.icon size={20} />
-            <span className="font-medium">{item.label}</span>
+            <item.icon size={20} className="group-hover:scale-110 transition-transform" />
+            <span className="font-semibold text-sm">{item.label}</span>
           </NavLink>
         ))}
       </div>
 
-      <div className="p-4 border-t border-slate-800">
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors cursor-pointer">
+      <div className="p-6">
+        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+          <p className="text-xs font-bold text-white mb-1 text-center">System Healthy</p>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 w-[98%]"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-6 flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer">
           <Settings size={20} />
-          <span className="font-medium">Settings</span>
+          <span className="font-semibold text-sm">Parameters</span>
         </div>
       </div>
     </div>
@@ -58,28 +72,46 @@ const Sidebar = () => {
 
 const Topbar = () => {
   return (
-    <header className="h-20 bg-darker/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-8 sticky top-0 z-10">
-      <div>
-        <h1 className="text-2xl font-semibold text-white tracking-tight">System Control</h1>
-        <p className="text-sm text-slate-400">AI Call Centre Automation System</p>
+    <header className="h-24 bg-black/20 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-10 sticky top-0 z-10">
+      <div className="flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-white/5 border border-white/5 rounded-xl">
+          <Search size={16} className="text-slate-500" />
+          <input 
+            type="text" 
+            placeholder="Search system nodes..." 
+            className="bg-transparent border-none text-sm text-white focus:outline-none w-48"
+          />
+        </div>
       </div>
-      <div className="flex items-center gap-4">
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-        <span className="text-sm text-emerald-400 font-medium">System Online</span>
-        <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 ml-4"></div>
+      
+      <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 border-r border-white/10 pr-6 mr-2 text-slate-400">
+           <Bell size={20} />
+           <Activity size={20} />
+        </div>
+        
+        <div className="flex items-center gap-3 pl-2 group cursor-pointer">
+          <div className="text-right hidden sm:block">
+            <p className="text-sm font-bold text-white group-hover:text-yellow-400 transition-colors">Commander</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Project Root</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 group-hover:text-yellow-400">
+            <User size={20} />
+          </div>
+        </div>
       </div>
     </header>
   );
 };
 
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
-      <div className="flex h-screen overflow-hidden bg-darker text-slate-200 selection:bg-primary/30">
+      <div className="flex h-screen overflow-hidden bg-black text-slate-200 selection:bg-yellow-400/30">
         <Sidebar />
         <div className="flex-1 flex flex-col h-full overflow-hidden relative">
           <Topbar />
-          <main className="flex-1 overflow-y-auto p-8 relative z-0">
+          <main className="flex-1 overflow-y-auto p-10 relative z-0">
             <div className="max-w-7xl mx-auto">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -95,5 +127,3 @@ function App() {
     </BrowserRouter>
   );
 }
-
-export default App;

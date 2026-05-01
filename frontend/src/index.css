@@ -2,34 +2,55 @@
 
 @theme {
   --color-primary: #FCE100;
-  --color-secondary: #B39D00;
-  --color-dark: #121212;
+  --color-dark: #0A0A0A;
   --color-darker: #050505;
-  --color-panel: #1A1A1A;
 }
 
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+  
   body {
-    @apply bg-darker text-neutral-300 antialiased;
+    @apply bg-black text-neutral-300 antialiased font-sans;
     background-image: 
-      linear-gradient(to right, rgba(252, 225, 0, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(252, 225, 0, 0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
+      radial-gradient(at 0% 0%, rgba(252, 225, 0, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(252, 225, 0, 0.03) 0px, transparent 50%);
+    min-height: 100vh;
+    margin: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-white tracking-tight;
   }
 }
 
-/* Custom scrollbar for dark UI */
+@layer components {
+  .glass-card {
+    @apply bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl;
+  }
+  
+  .glass-button {
+    @apply px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all duration-300 text-sm font-medium active:scale-95;
+  }
+
+  .status-badge {
+    @apply px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border;
+  }
+}
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #050505; 
+  background: transparent; 
 }
 ::-webkit-scrollbar-thumb {
-  background: #262626; 
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1); 
+  border-radius: 100px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #404040; 
+  background: rgba(255, 255, 255, 0.2); 
 }

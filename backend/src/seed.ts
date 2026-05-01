@@ -44,12 +44,48 @@ async function main() {
   // Create mock call logs
   await prisma.callLog.createMany({
     data: [
-      { userId: user1.id, intent: 'package_inquiry', duration: 120 },
-      { userId: user1.id, intent: 'payment_issue', duration: 45 },
-      { userId: user2.id, intent: 'membership_info', duration: 200 },
-      { intent: 'unknown', duration: 15 } // new user unassigned call
+      { 
+        userId: user1.id, 
+        intent: 'Enterprise Upgrade Inquiry', 
+        category: 'Sales',
+        duration: 245, 
+        sentiment: 'Positive',
+        status: 'Completed',
+        summary: 'Customer interested in upgrading from Pro to Enterprise plan for their team of 50.',
+        transcript: 'AI: Hello! How can I help you? User: I want to know about the enterprise plan. AI: Certainly, for a team of your size, the Enterprise plan offers unlimited calls and priority support...'
+      },
+      { 
+        userId: user1.id, 
+        intent: 'Billing Discrepancy', 
+        category: 'Billing',
+        duration: 180, 
+        sentiment: 'Neutral',
+        status: 'Completed',
+        summary: 'User questioned a double charge on their recent invoice. Verified and scheduled a refund.',
+        transcript: 'AI: I see the double charge. I have initiated a refund process. User: Thank you, that was quick.'
+      },
+      { 
+        userId: user2.id, 
+        intent: 'Technical Integration Support', 
+        category: 'Support',
+        duration: 420, 
+        sentiment: 'Negative',
+        status: 'Transferred',
+        summary: 'User struggling with Twilio webhook configuration. Call transferred to senior engineer.',
+        transcript: 'User: My webhooks are not firing. AI: I have checked the logs and see a 403 error. Let me transfer you to a specialist.'
+      },
+      { 
+        intent: 'New Lead: Product Demo Request', 
+        category: 'Sales',
+        duration: 95, 
+        sentiment: 'Positive',
+        status: 'Completed',
+        summary: 'Potential customer requested a live demo of the AI Call Center platform.',
+        transcript: 'User: Can I see a demo? AI: I can certainly schedule that for you. What time works best?'
+      }
     ]
   });
+
 
   console.log('Database seeded successfully.');
 }

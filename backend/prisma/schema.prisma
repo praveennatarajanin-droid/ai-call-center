@@ -21,14 +21,20 @@ model User {
 }
 
 model CallLog {
-  id        String   @id @default(uuid())
-  userId    String?
-  intent    String
-  duration  Int      // in seconds
-  timestamp DateTime @default(now())
+  id         String   @id @default(uuid())
+  userId     String?
+  intent     String
+  category   String   @default("General") // "Sales", "Support", "Billing", "General"
+  duration   Int      // in seconds
+  sentiment  String   @default("Neutral") // "Positive", "Neutral", "Negative"
+  status     String   @default("Completed") // "Completed", "Failed", "Transferred"
+  summary    String?
+  transcript String?
+  timestamp  DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id])
 }
+
 
 model Interaction {
   id        String   @id @default(uuid())
