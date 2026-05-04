@@ -12,27 +12,38 @@ model User {
   name      String
   phone     String   @unique
   type      String   // "NEW" or "EXISTING"
+  role      String   @default("USER") // "ADMIN" or "USER"
+  password  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   calls        CallLog[]
   payments     Payment[]
   interactions Interaction[]
+  healthReports HealthReport[]
 }
 
 model CallLog {
   id         String   @id @default(uuid())
   userId     String?
   intent     String
-  category   String   @default("General") // "Sales", "Support", "Billing", "General"
+  category   String   @default("General") // "Sales", "Support", "Billing", "General", "Health", "Emergency"
+  priority   String   @default("medium") // "low", "medium", "high", "emergency"
+  isEmergency Boolean @default(false)
   duration   Int      // in seconds
   sentiment  String   @default("Neutral") // "Positive", "Neutral", "Negative"
-  status     String   @default("Completed") // "Completed", "Failed", "Transferred"
+  status     String   @default("Under Review") // "Under Review", "Resolved", "Needs Attention", "Sent to Doctor"
   summary    String?
   transcript String?
+  adminReply String?
+  aiResponse String?
+  selectedOption String?
+  recordingUrl   String?
+  callSid    String?  @unique
   timestamp  DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id])
+  healthReports HealthReport[]
 }
 
 
@@ -44,6 +55,19 @@ model Interaction {
   timestamp DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+}
+
+model HealthReport {
+  id        String   @id @default(uuid())
+  userId    String
+  callId    String?
+  symptoms  String   // JSON string or comma separated
+  severity  String   // "low", "medium", "high", "critical"
+  summary   String
+  timestamp DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  call CallLog? @relation(fields: [callId], references: [id])
 }
 
 model Package {

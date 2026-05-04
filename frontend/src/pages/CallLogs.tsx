@@ -21,7 +21,10 @@ export default function CallLogs() {
 
   useEffect(() => {
     setIsLoading(true);
-    axios.get('http://localhost:5000/api/calls')
+    const token = localStorage.getItem('token');
+    axios.get('http://localhost:5000/api/calls', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
       .then(res => setLogs(res.data))
       .catch(console.error)
       .finally(() => setIsLoading(false));
@@ -42,12 +45,74 @@ export default function CallLogs() {
     }
   };
 
+  const getMedicalSentiment = (sentiment: string) => {
+    switch (sentiment.toLowerCase()) {
+      case 'positive': return 'Stable';
+      case 'negative': return 'Critical';
+      default: return 'Moderate';
+    }
+  };
+
   const getStatusStyles = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'completed': return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-      case 'transferred': return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-      case 'failed': return "bg-rose-500/10 text-rose-400 border-rose-500/20";
+      case 'completed': 
+      case 'resolved': return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      case 'transferred': 
+      case 'sent to doctor': return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+      case 'ongoing': 
+      case 'under review': return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      case 'failed': 
+      case 'not_resolved': 
+      case 'needs attention': return "bg-rose-500/10 text-rose-400 border-rose-500/20";
       default: return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+    }
+  };
+
+  const updateStatus = async (id: string, newStatus: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`http://localhost:5000/api/call/${id}/status`, { status: newStatus }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Update local state
+      setLogs(logs.map((log: any) => log.id === id ? { ...log, status: newStatus } : log));
+      if (selectedLog && selectedLog.id === id) {
+        setSelectedLog({ ...selectedLog, status: newStatus });
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update status');
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!selectedLog) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`http://localhost:5000/api/calls/${selectedLog.id}/download`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Download transcript
+      const blob = new Blob([res.data.transcript], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transcript-${selectedLog.id}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      // Open audio if exists
+      if (res.data.recordingUrl) {
+        window.open(res.data.recordingUrl, '_blank');
+      } else {
+        alert('No audio recording found for this call.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to download data');
     }
   };
 
@@ -90,9 +155,9 @@ export default function CallLogs() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white/5 border-b border-white/5 text-[11px] uppercase tracking-widest text-slate-500">
-                  <th className="p-5 font-semibold">Customer</th>
-                  <th className="p-5 font-semibold">Classification</th>
-                  <th className="p-5 font-semibold">Insights</th>
+                  <th className="p-5 font-semibold">Patient</th>
+                  <th className="p-5 font-semibold">Medical Issue</th>
+                  <th className="p-5 font-semibold">Patient Condition</th>
                   <th className="p-5 font-semibold">Duration</th>
                   <th className="p-5 font-semibold text-right">Action</th>
                 </tr>
@@ -144,7 +209,7 @@ export default function CallLogs() {
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
                           {getSentimentIcon(log.sentiment)}
-                          <span className="text-[10px] text-slate-400 uppercase font-bold">{log.sentiment}</span>
+                          <span className="text-[10px] text-slate-400 uppercase font-bold">{getMedicalSentiment(log.sentiment)}</span>
                         </div>
                         <span className={cn("status-badge", getStatusStyles(log.status))}>
                           {log.status}
@@ -222,10 +287,21 @@ export default function CallLogs() {
                   </div>
                 </div>
                 <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Status</p>
-                  <span className={cn("text-xs font-bold", selectedLog.status === 'Completed' ? 'text-emerald-400' : 'text-amber-400')}>
-                    {selectedLog.status}
-                  </span>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Case Status</p>
+                  <select 
+                    value={selectedLog.status} 
+                    onChange={(e) => updateStatus(selectedLog.id, e.target.value)}
+                    className={cn("text-xs font-bold bg-transparent outline-none cursor-pointer w-full appearance-none", 
+                      (selectedLog.status === 'Resolved' || selectedLog.status === 'Completed' || selectedLog.status === 'resolved') ? 'text-emerald-400' : 
+                      (selectedLog.status === 'Under Review' || selectedLog.status === 'ongoing') ? 'text-blue-400' :
+                      (selectedLog.status === 'Needs Attention' || selectedLog.status === 'not_resolved' || selectedLog.status === 'Failed') ? 'text-rose-400' : 'text-amber-400'
+                    )}
+                  >
+                    <option value="Under Review" className="text-black">Under Review</option>
+                    <option value="Resolved" className="text-black">Resolved</option>
+                    <option value="Needs Attention" className="text-black">Needs Attention</option>
+                    <option value="Sent to Doctor" className="text-black">Sent to Doctor</option>
+                  </select>
                 </div>
               </section>
 
@@ -235,7 +311,8 @@ export default function CallLogs() {
                   <Tag size={14} /> Interaction Transcript
                 </div>
                 <div className="space-y-4">
-                  {selectedLog.transcript.split('. ').map((line: string, i: number) => {
+                  {selectedLog.transcript?.split('. ').map((line: string, i: number) => {
+                    if (!line) return null;
                     const isAI = line.startsWith('AI:');
                     const isUser = line.startsWith('User:');
                     return (
@@ -254,10 +331,22 @@ export default function CallLogs() {
                   })}
                 </div>
               </section>
+
+              {/* Admin Reply Section */}
+              {selectedLog.adminReply && (
+                <section className="space-y-3 mt-6">
+                  <div className="flex items-center gap-2 text-xs font-bold text-yellow-500 uppercase tracking-widest">
+                    <MessageSquare size={14} /> Admin Override Reply
+                  </div>
+                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-sm text-yellow-400 font-medium">
+                    "{selectedLog.adminReply}"
+                  </div>
+                </section>
+              )}
             </div>
 
             <div className="p-6 border-t border-white/5 bg-white/5">
-              <button className="w-full py-3 bg-primary text-dark font-bold rounded-xl hover:bg-yellow-400 transition-all flex items-center justify-center gap-2">
+              <button onClick={handleDownload} className="w-full py-3 bg-primary text-dark font-bold rounded-xl hover:bg-yellow-400 transition-all flex items-center justify-center gap-2">
                 Download Audio & Transcript
               </button>
             </div>

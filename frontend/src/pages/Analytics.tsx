@@ -8,7 +8,9 @@ export default function Analytics() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/analytics').then(res => setStats(res.data)).catch(console.error);
+    const token = localStorage.getItem('token');
+    axios.get('http://localhost:5000/api/analytics', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => setStats(res.data)).catch(console.error);
   }, []);
 
   if (!stats) return <div className="p-8 text-center text-slate-400">Loading analytics...</div>;

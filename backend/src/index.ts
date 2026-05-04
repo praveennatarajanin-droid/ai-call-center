@@ -19,11 +19,20 @@ app.use(cors());
 app.use(express.json()); // For regular REST API requests
 app.use(express.urlencoded({ extended: true })); // IMPORTANT: Twilio sends application/x-www-form-urlencoded
 
+import authRoutes from './routes/authRoutes';
+import { authenticateToken } from './utils/authMiddleware';
+
+app.use('/api/auth', authRoutes);
+
 // Use modular routes
 app.use('/api/call', callRoutes);
+import healthRoutes from './routes/healthRoutes';
+app.use('/api/health', healthRoutes);
+import aiRoutes from './routes/aiRoutes';
+app.use('/api/ai', aiRoutes);
 
 // Original Users endpoint
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', authenticateToken, async (req, res) => {
   const users = await prisma.user.findMany({
     include: { payments: true }
   });
@@ -31,7 +40,7 @@ app.get('/api/users', async (req, res) => {
 });
 
 // Original Call logs endpoint
-app.get('/api/calls', async (req, res) => {
+app.get('/api/calls', authenticateToken, async (req, res) => {
   const calls = await prisma.callLog.findMany({
     include: { user: true },
     orderBy: { timestamp: 'desc' }
@@ -40,7 +49,7 @@ app.get('/api/calls', async (req, res) => {
 });
 
 // Original Analytics endpoints
-app.get('/api/analytics', async (req, res) => {
+app.get('/api/analytics', authenticateToken, async (req, res) => {
   const totalCalls = await prisma.callLog.count();
   const activeUsers = await prisma.user.count();
   

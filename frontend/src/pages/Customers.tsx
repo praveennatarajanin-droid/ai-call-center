@@ -8,7 +8,9 @@ export default function Customers() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/users').then(res => setCustomers(res.data)).catch(console.error);
+    const token = localStorage.getItem('token');
+    axios.get('http://localhost:5000/api/users', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => setCustomers(res.data)).catch(console.error);
   }, []);
 
   const filteredCustomers = customers.filter((c: any) => 

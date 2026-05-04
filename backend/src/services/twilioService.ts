@@ -45,3 +45,26 @@ export const generateFallbackTwiML = () => {
   });
   return twiml.toString();
 };
+
+export const updateLiveCall = async (callSid: string, message: string) => {
+  // If credentials are mock, we just simulate success
+  if (process.env.TWILIO_ACCOUNT_SID === 'mock_sid' || !process.env.TWILIO_ACCOUNT_SID) {
+    console.log(`Mock: Admin replied to ${callSid}: ${message}`);
+    return true;
+  }
+
+  const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  const twiml = new VoiceResponse();
+  twiml.say({ voice: 'Polly.Amy-Neural' }, message);
+  
+  // After speaking admin message, keep the call open to hear parent response
+  twiml.gather({
+    input: ['speech'],
+    action: '/api/call/gather',
+    method: 'POST',
+    timeout: 5,
+  });
+
+  await client.calls(callSid).update({ twiml: twiml.toString() });
+  return true;
+};
