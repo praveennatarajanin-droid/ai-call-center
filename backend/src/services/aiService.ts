@@ -19,32 +19,17 @@ export const processSpeech = async (callSid: string, text: string) => {
   sessions[callSid].push({ role: 'user', content: text });
 
   try {
-    if (process.env.OPENAI_API_KEY === 'sk-dummy-openai-key' || !process.env.OPENAI_API_KEY) {
-      // Mock logic if no real key is provided
-      let intent = 'unknown';
-      let response = "I'm sorry, I couldn't process that. Can you please repeat?";
-      const lowerText = text.toLowerCase();
-      
-      if (lowerText.includes('pay') || lowerText.includes('bill')) {
-        intent = 'payment_issue';
-        response = "I see you're calling about a payment issue. I can help with that. Let me look up your billing details.";
-      } else if (lowerText.includes('member') || lowerText.includes('account')) {
-        intent = 'membership_query';
-        response = "I can certainly help you with your membership. What specific details do you need?";
-      } else if (lowerText.includes('complain') || lowerText.includes('angry')) {
-        intent = 'complaint';
-        response = "I'm very sorry to hear you're having a bad experience. Please tell me more so I can fix it for you.";
-      } else {
-        intent = 'enquiry';
-        response = "Thanks for your enquiry! How else can I assist you today?";
-      }
-      
-      sessions[callSid].push({ role: 'assistant', content: response });
-      return { intent, response };
+    const isPlaceholder = !process.env.OPENAI_API_KEY || 
+                         process.env.OPENAI_API_KEY.includes('placeholder') || 
+                         process.env.OPENAI_API_KEY.includes('dummy');
+
+    if (isPlaceholder) {
+      console.log('Using Mock AI Logic (Placeholder Key Detected)');
+      return getMockResponse(text);
     }
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4', // or gpt-3.5-turbo
+      model: 'gpt-4o', 
       messages: sessions[callSid] as any[],
       functions: [
         {
@@ -73,7 +58,33 @@ export const processSpeech = async (callSid: string, text: string) => {
     return { intent: 'unknown', response: "I'm not sure how to respond to that." };
 
   } catch (error) {
-    console.error('AI Processing Error:', error);
-    return { intent: 'error', response: 'Sorry, our AI system is currently experiencing issues.' };
+    console.error('AI Processing Error, falling back to Mock:', error);
+    return getMockResponse(text);
   }
 };
+
+const getMockResponse = (text: string) => {
+  let intent = 'unknown';
+  let response = "I'm sorry, I couldn't process that. Can you please repeat?";
+  const lowerText = text.toLowerCase();
+  
+  if (lowerText.includes('pay') || lowerText.includes('bill') || lowerText.includes('money') || lowerText.includes('gst')) {
+    intent = 'payment_issue';
+    response = "I see you're asking about payments or billing. I can help you with your invoice details or payment status.";
+  } else if (lowerText.includes('member') || lowerText.includes('account') || lowerText.includes('plan')) {
+    intent = 'membership_query';
+    response = "I can certainly help you with your account or membership plan. What specific details are you looking for?";
+  } else if (lowerText.includes('complain') || lowerText.includes('angry') || lowerText.includes('bad') || lowerText.includes('issue')) {
+    intent = 'complaint';
+    response = "I'm very sorry you're having trouble. Please tell me more so I can fix this for you immediately.";
+  } else if (lowerText.includes('hi') || lowerText.includes('hello') || lowerText.includes('hey') || lowerText.includes('yo')) {
+    intent = 'enquiry';
+    response = "Hello! I'm your AI assistant. How can I help you today?";
+  } else {
+    intent = 'enquiry';
+    response = "Thanks for reaching out! How else can I assist you with our services today?";
+  }
+  
+  return { intent, response };
+};
+

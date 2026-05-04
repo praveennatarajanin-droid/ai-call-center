@@ -37,6 +37,10 @@
   .status-badge {
     @apply px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border;
   }
+
+  .bg-panel {
+    @apply bg-neutral-900/40 backdrop-blur-md border border-white/5;
+  }
 }
 
 /* Custom scrollbar */

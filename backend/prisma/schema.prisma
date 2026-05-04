@@ -21,16 +21,18 @@ model User {
 }
 
 model CallLog {
-  id         String   @id @default(uuid())
-  userId     String?
-  intent     String
-  category   String   @default("General") // "Sales", "Support", "Billing", "General"
-  duration   Int      // in seconds
-  sentiment  String   @default("Neutral") // "Positive", "Neutral", "Negative"
-  status     String   @default("Completed") // "Completed", "Failed", "Transferred"
-  summary    String?
-  transcript String?
-  timestamp  DateTime @default(now())
+  id             String   @id @default(uuid())
+  userId         String?
+  intent         String
+  category       String   @default("General") // "Sales", "Support", "Billing", "General"
+  duration       Int      // in seconds
+  sentiment      String   @default("Neutral") // "Positive", "Neutral", "Negative"
+  sentimentScore Float    @default(0.5)       // 0.0 to 1.0 (Negative to Positive)
+  crmSynced      Boolean  @default(false)
+  status         String   @default("Completed") // "Completed", "Failed", "Transferred"
+  summary        String?
+  transcript     String?
+  timestamp      DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id])
 }
