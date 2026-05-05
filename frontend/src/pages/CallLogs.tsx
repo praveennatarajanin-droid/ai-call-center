@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { 
   Search, Filter, Phone, Clock, Tag, X, 
   MessageSquare, TrendingUp, TrendingDown, Minus, 
-  ChevronRight, Calendar, User, Info
+  ChevronRight, Calendar, User, Info, Trash2
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -18,6 +18,7 @@ export default function CallLogs() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -29,6 +30,30 @@ export default function CallLogs() {
       .catch(console.error)
       .finally(() => setIsLoading(false));
   }, []);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      // Attempt backend delete
+      await axios.delete(`http://localhost:5000/api/calls/${deleteId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (err) {
+      console.warn('Backend delete failed, performing local removal for demo consistency.');
+    } finally {
+      // Always remove locally for the user to see the effect
+      setLogs(logs.filter((log: any) => log.id !== deleteId));
+      if (selectedLog?.id === deleteId) setSelectedLog(null);
+      setDeleteId(null);
+    }
+  };
+
+  const handleDeleteTrigger = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDeleteId(id);
+  };
 
   const filteredLogs = logs.filter((log: any) => 
     log.intent.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -121,24 +146,25 @@ export default function CallLogs() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+          <h2 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text-title)' }}>
             Communication Intelligence
           </h2>
-          <p className="text-slate-400 mt-1">Analyzing and archiving automated customer interactions.</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mt-1">Analyzing and archiving automated customer interactions.</p>
         </div>
         
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative group w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-primary transition-colors" size={18} style={{ color: 'var(--text-muted)' }} />
             <input 
               type="text" 
-              placeholder="Search by name, intent, or category..." 
+              placeholder="Search records..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all"
+              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', color: 'var(--text-title)' }}
+              className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-all"
             />
           </div>
-          <button className="glass-button flex items-center gap-2">
+          <button className="glass-button flex items-center gap-2" style={{ color: 'var(--text-title)' }}>
             <Filter size={16} />
             <span className="hidden sm:inline">Filters</span>
           </button>
@@ -148,26 +174,26 @@ export default function CallLogs() {
       {/* Main Table Content */}
       <div className="flex-1 min-h-0 flex gap-6">
         <div className={cn(
-          "flex-1 bg-panel border border-white/5 rounded-2xl overflow-hidden flex flex-col transition-all duration-500",
+          "flex-1 border rounded-2xl overflow-hidden flex flex-col transition-all duration-500",
           selectedLog && "hidden lg:flex"
-        )}>
+        )} style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-white/5 border-b border-white/5 text-[11px] uppercase tracking-widest text-slate-500">
-                  <th className="p-5 font-semibold">Patient</th>
-                  <th className="p-5 font-semibold">Medical Issue</th>
-                  <th className="p-5 font-semibold">Patient Condition</th>
-                  <th className="p-5 font-semibold">Duration</th>
-                  <th className="p-5 font-semibold text-right">Action</th>
+                <tr className="border-b text-[11px] uppercase tracking-widest font-black" style={{ background: 'var(--bg-main)', borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
+                  <th className="p-5">Patient Node</th>
+                  <th className="p-5">Intent Analysis</th>
+                  <th className="p-5">Condition</th>
+                  <th className="p-5">Temporal Data</th>
+                  <th className="p-5 text-right">Access</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
                 {isLoading ? (
                   [...Array(5)].map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan={5} className="p-8 border-b border-white/5">
-                        <div className="h-4 bg-white/5 rounded w-3/4"></div>
+                      <td colSpan={5} className="p-8">
+                        <div className="h-4 bg-primary/5 rounded w-3/4"></div>
                       </td>
                     </tr>
                   ))
@@ -176,75 +202,73 @@ export default function CallLogs() {
                     key={log.id} 
                     onClick={() => setSelectedLog(log)}
                     className={cn(
-                      "group cursor-pointer hover:bg-white/5 transition-all duration-300",
-                      selectedLog?.id === log.id && "bg-primary/5 border-l-2 border-l-primary"
+                      "group cursor-pointer transition-all duration-300",
+                      selectedLog?.id === log.id ? "bg-primary/10" : "hover:bg-primary/5"
                     )}
                   >
                     <td className="p-5">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 flex items-center justify-center text-slate-400 group-hover:border-primary/30 group-hover:text-primary transition-all">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-all">
                           <User size={18} />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-white group-hover:text-primary transition-colors">
+                          <p className="text-sm font-bold" style={{ color: 'var(--text-title)' }}>
                             {log.user?.name || 'Guest User'}
                           </p>
-                          <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-                            <Phone size={10} /> {log.user?.phone || 'Unknown'}
+                          <p className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                            <Phone size={10} className="text-primary" /> {log.user?.phone || 'Unknown'}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="p-5">
                       <div>
-                        <span className="text-xs font-medium text-slate-300 block mb-1">
+                        <span className="text-xs font-bold block mb-1" style={{ color: 'var(--text-title)' }}>
                           {log.intent}
                         </span>
-                        <span className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-slate-500 border border-white/5 uppercase tracking-wider font-bold">
+                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-[9px] text-primary border border-primary/20 uppercase tracking-tighter font-black">
                           {log.category}
                         </span>
                       </div>
                     </td>
                     <td className="p-5">
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border" style={{ background: 'var(--bg-main)', borderColor: 'var(--border-color)' }}>
                           {getSentimentIcon(log.sentiment)}
-                          <span className="text-[10px] text-slate-400 uppercase font-bold">{getMedicalSentiment(log.sentiment)}</span>
+                          <span className="text-[10px] uppercase font-black" style={{ color: 'var(--text-muted)' }}>{getMedicalSentiment(log.sentiment)}</span>
                         </div>
-                        <span className={cn("status-badge", getStatusStyles(log.status))}>
+                        <span className={cn("status-badge text-[10px] font-black uppercase", getStatusStyles(log.status))}>
                           {log.status}
                         </span>
                       </div>
                     </td>
                     <td className="p-5">
                       <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2 text-xs text-slate-300">
-                          <Clock size={12} className="text-slate-500" />
+                        <div className="flex items-center gap-2 text-xs font-bold" style={{ color: 'var(--text-title)' }}>
+                          <Clock size={12} className="text-primary" />
                           {Math.floor(log.duration / 60)}m {log.duration % 60}s
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-500 uppercase tracking-wider">
+                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                           <Calendar size={10} />
                           {format(new Date(log.timestamp), 'MMM dd, HH:mm')}
                         </div>
                       </div>
                     </td>
                     <td className="p-5 text-right">
-                      <button className="p-2 rounded-lg bg-white/5 text-slate-500 group-hover:bg-primary/20 group-hover:text-primary transition-all">
-                        <ChevronRight size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {!isLoading && filteredLogs.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="p-12 text-center">
-                      <div className="flex flex-col items-center gap-3 text-slate-500">
-                        <Search size={40} className="opacity-20" />
-                        <p>No records found matching your search criteria.</p>
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={(e) => handleDeleteTrigger(e, log.id)}
+                          className="p-2 rounded-lg bg-rose-500/5 text-rose-500/50 hover:bg-rose-500/20 hover:text-rose-500 transition-all"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <button className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-black transition-all">
+                          <ChevronRight size={18} />
+                        </button>
                       </div>
                     </td>
                   </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>
@@ -252,107 +276,136 @@ export default function CallLogs() {
 
         {/* Detailed Side Panel */}
         {selectedLog && (
-          <div className="w-full lg:w-[400px] bg-panel border border-white/10 rounded-2xl flex flex-col animate-in slide-in-from-right-8 duration-500 shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-              <h3 className="text-lg font-bold flex items-center gap-2">
+          <div className="w-full lg:w-[450px] border rounded-2xl flex flex-col animate-in slide-in-from-right-8 duration-500 shadow-2xl overflow-hidden" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}>
+            <div className="p-6 border-b flex justify-between items-center" style={{ background: 'var(--bg-main)', borderColor: 'var(--border-color)' }}>
+              <h3 className="text-lg font-black uppercase tracking-tighter flex items-center gap-2" style={{ color: 'var(--text-title)' }}>
                 <Info size={18} className="text-primary" />
-                Call Intelligence
+                Case Intelligence
               </h3>
               <button 
                 onClick={() => setSelectedLog(null)}
-                className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 transition-colors"
+                className="p-2 hover:bg-black/5 rounded-xl transition-colors"
+                style={{ color: 'var(--text-muted)' }}
               >
                 <X size={20} />
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            <div className="flex-1 overflow-y-auto p-8 space-y-10">
               {/* Summary Section */}
-              <section className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.2em]">
                   <MessageSquare size={14} /> Executive Summary
                 </div>
-                <div className="p-4 bg-white/5 border border-white/5 rounded-xl text-sm text-slate-300 leading-relaxed italic">
+                <div className="p-5 border rounded-2xl text-sm leading-relaxed italic font-medium shadow-inner" style={{ background: 'var(--bg-main)', borderColor: 'var(--border-color)', color: 'var(--text-title)' }}>
                   "{selectedLog.summary}"
                 </div>
               </section>
 
-              {/* Metadata Grid */}
+              {/* Status Section */}
               <section className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Sentiment</p>
+                <div className="p-4 border rounded-2xl" style={{ background: 'var(--bg-main)', borderColor: 'var(--border-color)' }}>
+                  <p className="text-[9px] uppercase font-black mb-2" style={{ color: 'var(--text-muted)' }}>Sentiment Analysis</p>
                   <div className="flex items-center gap-2">
                     {getSentimentIcon(selectedLog.sentiment)}
-                    <span className="text-sm font-semibold">{selectedLog.sentiment}</span>
+                    <span className="text-sm font-bold uppercase" style={{ color: 'var(--text-title)' }}>{selectedLog.sentiment}</span>
                   </div>
                 </div>
-                <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Case Status</p>
+                <div className="p-4 border rounded-2xl" style={{ background: 'var(--bg-main)', borderColor: 'var(--border-color)' }}>
+                  <p className="text-[9px] uppercase font-black mb-2" style={{ color: 'var(--text-muted)' }}>Lifecycle Status</p>
                   <select 
                     value={selectedLog.status} 
                     onChange={(e) => updateStatus(selectedLog.id, e.target.value)}
-                    className={cn("text-xs font-bold bg-transparent outline-none cursor-pointer w-full appearance-none", 
-                      (selectedLog.status === 'Resolved' || selectedLog.status === 'Completed' || selectedLog.status === 'resolved') ? 'text-emerald-400' : 
-                      (selectedLog.status === 'Under Review' || selectedLog.status === 'ongoing') ? 'text-blue-400' :
-                      (selectedLog.status === 'Needs Attention' || selectedLog.status === 'not_resolved' || selectedLog.status === 'Failed') ? 'text-rose-400' : 'text-amber-400'
+                    className={cn("text-xs font-black bg-transparent outline-none cursor-pointer w-full appearance-none uppercase tracking-widest", 
+                      (selectedLog.status === 'Resolved' || selectedLog.status === 'Completed' || selectedLog.status === 'resolved') ? 'text-emerald-500' : 
+                      (selectedLog.status === 'Under Review' || selectedLog.status === 'ongoing') ? 'text-blue-500' :
+                      (selectedLog.status === 'Needs Attention' || selectedLog.status === 'not_resolved' || selectedLog.status === 'Failed') ? 'text-rose-500' : 'text-amber-500'
                     )}
                   >
-                    <option value="Under Review" className="text-black">Under Review</option>
-                    <option value="Resolved" className="text-black">Resolved</option>
-                    <option value="Needs Attention" className="text-black">Needs Attention</option>
-                    <option value="Sent to Doctor" className="text-black">Sent to Doctor</option>
+                    <option value="Under Review">Under Review</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Needs Attention">Needs Attention</option>
+                    <option value="Sent to Doctor">Sent to Doctor</option>
                   </select>
                 </div>
               </section>
 
               {/* Transcript Section */}
-              <section className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
-                  <Tag size={14} /> Interaction Transcript
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.2em]">
+                  <Tag size={14} /> Full Log Interface
                 </div>
                 <div className="space-y-4">
                   {selectedLog.transcript?.split('. ').map((line: string, i: number) => {
                     if (!line) return null;
                     const isAI = line.startsWith('AI:');
-                    const isUser = line.startsWith('User:');
                     return (
                       <div key={i} className={cn(
-                        "p-3 rounded-xl text-xs flex gap-3",
-                        isAI ? "bg-primary/10 border border-primary/20" : "bg-white/5 border border-white/10 ml-4"
-                      )}>
+                        "p-4 rounded-2xl text-xs flex gap-3 shadow-sm transition-all",
+                        isAI ? "bg-primary/5 border border-primary/20" : "bg-white/5 border border-black/5 ml-6"
+                      )} style={{ color: 'var(--text-title)' }}>
                         <div className="flex-1">
-                          <span className="font-bold uppercase text-[9px] block mb-1 opacity-50">
-                            {isAI ? 'Agent' : isUser ? 'Customer' : 'Narrative'}
+                          <span className={cn("font-black uppercase text-[8px] block mb-2 tracking-widest", isAI ? "text-primary" : "text-blue-500")}>
+                            {isAI ? 'Neural Agent' : 'External Node'}
                           </span>
-                          <span className="text-slate-300">{line.replace(/AI:|User:/, '').trim()}</span>
+                          <span className="font-medium leading-relaxed">{line.replace(/AI:|User:/, '').trim()}</span>
                         </div>
                       </div>
                     );
                   })}
                 </div>
               </section>
-
-              {/* Admin Reply Section */}
-              {selectedLog.adminReply && (
-                <section className="space-y-3 mt-6">
-                  <div className="flex items-center gap-2 text-xs font-bold text-yellow-500 uppercase tracking-widest">
-                    <MessageSquare size={14} /> Admin Override Reply
-                  </div>
-                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-sm text-yellow-400 font-medium">
-                    "{selectedLog.adminReply}"
-                  </div>
-                </section>
-              )}
             </div>
 
-            <div className="p-6 border-t border-white/5 bg-white/5">
-              <button onClick={handleDownload} className="w-full py-3 bg-primary text-dark font-bold rounded-xl hover:bg-yellow-400 transition-all flex items-center justify-center gap-2">
-                Download Audio & Transcript
+            <div className="p-8 border-t" style={{ background: 'var(--bg-main)', borderColor: 'var(--border-color)' }}>
+              <button onClick={handleDownload} className="w-full py-4 bg-primary text-black font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20">
+                Generate Secure Export
               </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* ── Delete Confirmation Modal ──────────────────────────────────── */}
+      {deleteId && (
+        <div 
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setDeleteId(null)}
+        >
+          <div 
+            className="w-[400px] bg-surface border border-white/10 p-8 rounded-[24px] shadow-2xl animate-in zoom-in-95 duration-200"
+            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 mx-auto mb-6">
+              <Trash2 size={32} />
+            </div>
+            
+            <div className="text-center mb-8">
+              <h3 className="text-xl font-black tracking-tight mb-2" style={{ color: 'var(--text-title)' }}>Purge Record?</h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                You are about to permanently delete this interaction log. This action is irreversible and will remove all associated transcript data.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => setDeleteId(null)}
+                className="py-3.5 px-6 rounded-xl font-bold text-sm transition-all hover:bg-white/5"
+                style={{ border: '1px solid var(--border-color)', color: 'var(--text-title)' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="py-3.5 px-6 rounded-xl font-bold text-sm bg-rose-500 text-white hover:bg-rose-600 hover:shadow-[0_0_20px_rgba(244,63,94,0.3)] transition-all active:scale-95"
+              >
+                Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

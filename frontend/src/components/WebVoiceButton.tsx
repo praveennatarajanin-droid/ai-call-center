@@ -45,6 +45,14 @@ export default function WebVoiceButton({ userType = 'parent' }: { userType?: str
   const [isKeypadOpen, setIsKeypadOpen] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
 
+  const currentStepRef = React.useRef<Step>('idle');
+  const selectedOptionRef = React.useRef<number | null>(null);
+  const userTypeRef = React.useRef(userType);
+
+  useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
+  useEffect(() => { selectedOptionRef.current = selectedOption; }, [selectedOption]);
+  useEffect(() => { userTypeRef.current = userType; }, [userType]);
+
   const IVR_MENU = `
     Welcome to Nexus Health System.
     Press 1 for general health query,
@@ -77,39 +85,28 @@ export default function WebVoiceButton({ userType = 'parent' }: { userType?: str
     }
   }, []);
 
-  const startListening = useCallback(() => {
-    if (!recognition) return;
+  const startListening = useCallback((rec: any) => {
+    if (!rec) return;
     try {
-      recognition.start();
+      rec.start();
       setIsListening(true);
     } catch (err) {
       console.error('Recognition start error:', err);
     }
-  }, [recognition]);
+  }, []);
 
-  const handleOptionSelected = useCallback((option: number) => {
-    window.speechSynthesis.cancel();
-    if (recognition) {
-        try {
-            recognition.stop();
-        } catch(e) {}
+  const detectOption = (text: string): number | null => {
+    const lower = text.toLowerCase();
+    const map: Record<string, number> = {
+      'one': 1, '1': 1, 'two': 2, '2': 2, 'three': 3, '3': 3,
+      'four': 4, '4': 4, 'five': 5, '5': 5, 'six': 6, '6': 6,
+      'seven': 7, '7': 7, 'eight': 8, '8': 8, 'nine': 9, '9': 9,
+    };
+    for (const key in map) {
+      if (lower.includes(key)) return map[key];
     }
-    setIsListening(false);
-    
-    setSelectedOption(option);
-    
-    if (option === 9) {
-      setIsKeypadOpen(false);
-      setCurrentStep('idle');
-      window.location.href = "tel:+919600097807";
-      return;
-    }
-
-    setCurrentStep('awaiting_problem');
-    speakText("Please describe your problem", () => {
-      startListening();
-    });
-  }, [recognition, speakText, startListening]);
+    return null;
+  };
 
   const processFinalInteraction = useCallback(async (text: string) => {
     setIsLoading(true);
@@ -117,8 +114,8 @@ export default function WebVoiceButton({ userType = 'parent' }: { userType?: str
     try {
       const res = await axios.post('http://localhost:5000/api/ai/voice', { 
         text, 
-        userType,
-        option: selectedOption
+        userType: userTypeRef.current,
+        option: selectedOptionRef.current
       });
       
       const { response } = res.data;
@@ -135,21 +132,29 @@ export default function WebVoiceButton({ userType = 'parent' }: { userType?: str
     } finally {
       setIsLoading(false);
     }
-  }, [userType, selectedOption, speakText]);
+  }, [speakText]);
 
-  const detectOption = (text: string) => {
-    const lower = text.toLowerCase();
-    const map: Record<string, number> = {
-      'one': 1, '1': 1, 'two': 2, '2': 2, 'three': 3, '3': 3,
-      'four': 4, '4': 4, 'five': 5, '5': 5, 'six': 6, '6': 6,
-      'seven': 7, '7': 7, 'eight': 8, '8': 8, 'nine': 9, '9': 9,
-      'option 1': 1, 'option 2': 2, 'option 3': 3, 'option 4': 4, 'option 5': 5, 'option 6': 6, 'option 7': 7, 'option 8': 8, 'option 9': 9
-    };
-    for (const key in map) {
-      if (lower.includes(key)) return map[key];
+  const handleOptionSelected = useCallback((option: number, rec?: any) => {
+    window.speechSynthesis.cancel();
+    if (rec) {
+        try { rec.stop(); } catch(e) {}
     }
-    return null;
-  };
+    setIsListening(false);
+    setSelectedOption(option);
+    selectedOptionRef.current = option;
+    
+    if (option === 9) {
+      setIsKeypadOpen(false);
+      setCurrentStep('idle');
+      window.location.href = "tel:+919600097807";
+      return;
+    }
+
+    setCurrentStep('awaiting_problem');
+    speakText("Please describe your problem", () => {
+      startListening(rec);
+    });
+  }, [speakText, startListening]);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -164,16 +169,16 @@ export default function WebVoiceButton({ userType = 'parent' }: { userType?: str
         console.log('Recognized speech:', text);
         setIsListening(false);
         
-        if (currentStep === 'menu') {
+        if (currentStepRef.current === 'menu') {
           const option = detectOption(text);
           if (option) {
-            handleOptionSelected(option);
+            handleOptionSelected(option, recognitionInstance);
           } else {
             speakText("I didn't catch that. Please select an option from 1 to 9.", () => {
-              startListening();
+              startListening(recognitionInstance);
             });
           }
-        } else if (currentStep === 'awaiting_problem') {
+        } else if (currentStepRef.current === 'awaiting_problem') {
           await processFinalInteraction(text);
         }
       };
@@ -188,13 +193,14 @@ export default function WebVoiceButton({ userType = 'parent' }: { userType?: str
 
       setRecognition(recognitionInstance);
     }
-  }, [currentStep, handleOptionSelected, processFinalInteraction, speakText, startListening]);
+  }, []);
 
   const handleStartVoice = () => {
     setIsKeypadOpen(true);
     setCurrentStep('menu');
+    currentStepRef.current = 'menu';
     speakText(IVR_MENU, () => {
-      startListening();
+      startListening(recognition);
     });
   };
 
@@ -211,12 +217,16 @@ export default function WebVoiceButton({ userType = 'parent' }: { userType?: str
         id="start-voice-interaction"
         onClick={handleStartVoice}
         disabled={isLoading || isSpeaking || isListening || isKeypadOpen}
-        className={`flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all duration-300 text-sm font-bold active:scale-95 ${
-          isKeypadOpen ? 'text-primary' : 'text-slate-400 hover:text-white'
-        }`}
+        style={{ 
+          background: 'var(--glass-bg)', 
+          border: '1px solid var(--border-color)',
+          color: isKeypadOpen ? 'var(--primary-color)' : 'var(--text-title)',
+          transition: 'all 0.3s'
+        }}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold active:scale-95 group"
       >
-        <Mic size={18} />
-        <span>Voice Assistant</span>
+        <Mic size={18} className={isKeypadOpen ? 'text-primary' : 'group-hover:text-primary transition-colors'} />
+        <span className={isKeypadOpen ? 'text-primary' : 'group-hover:text-primary transition-colors'}>Voice Assistant</span>
       </button>
 
       {isKeypadOpen && (
@@ -225,48 +235,55 @@ export default function WebVoiceButton({ userType = 'parent' }: { userType?: str
           onClick={closeModal}
         >
           <div 
-            className="w-[280px] bg-[rgba(20,30,50,0.95)] border border-white/10 p-5 rounded-[20px] relative shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-in zoom-in-95 duration-200 m-0"
+            className="w-[300px] p-6 rounded-[24px] relative shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-200 m-0"
+            style={{ 
+              background: 'var(--bg-surface)', 
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-title)'
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <button 
               onClick={closeModal}
-              className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
+              className="absolute top-5 right-5 transition-colors hover:text-primary"
+              style={{ color: 'var(--text-muted)' }}
             >
               <X size={20} />
             </button>
 
             <VoiceOrb isSpeaking={isSpeaking} isListening={isListening} />
 
-            <div className="text-center mb-5">
-              <h3 className="text-xl font-bold text-white mb-0.5">Nexus Health</h3>
-              <p className="text-[11px] text-[#60a5fa] uppercase font-bold tracking-widest leading-none">Medical Support AI</p>
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-black tracking-tighter mb-0.5" style={{ color: 'var(--text-title)' }}>Nexus AI</h3>
+              <p className="text-[10px] text-primary uppercase font-black tracking-[0.2em] leading-none">Medical Node 01</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mb-5">
+            <div className="grid grid-cols-3 gap-3 mb-6">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <button
                   key={num}
-                  onClick={() => handleOptionSelected(num)}
-                  className={`aspect-square rounded-xl flex flex-col items-center justify-center transition-all duration-300 border ${
-                    selectedOption === num 
-                      ? 'bg-[#3b82f6] border-[#60a5fa] text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]' 
-                      : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20 active:scale-90'
-                  }`}
+                  onClick={() => handleOptionSelected(num, recognition)}
+                  style={{ 
+                    background: selectedOption === num ? 'var(--primary-color)' : 'var(--bg-main)',
+                    borderColor: selectedOption === num ? 'var(--primary-color)' : 'var(--border-color)',
+                    color: selectedOption === num ? '#000' : 'var(--text-title)'
+                  }}
+                  className={`aspect-square rounded-xl flex flex-col items-center justify-center transition-all duration-300 border shadow-sm active:scale-90`}
                 >
-                  <span className="text-xl font-bold leading-none mb-1">{num}</span>
-                  <span className="text-[9px] uppercase tracking-tighter text-white/70 font-bold leading-none">
+                  <span className="text-lg font-black leading-none mb-1">{num}</span>
+                  <span className="text-[8px] uppercase font-black tracking-tighter opacity-70">
                     {num === 1 ? 'Health' : num === 2 ? 'Symptoms' : num === 3 ? 'Meds' : num === 4 ? 'Appt' : num === 5 ? 'SOS' : num === 6 ? 'Issue' : num === 7 ? 'Rate' : num === 8 ? 'Other' : 'Admin'}
                   </span>
                 </button>
               ))}
             </div>
 
-            <div className="flex justify-center flex-col items-center gap-2">
-              <p className={`text-[11px] font-bold uppercase tracking-[0.2em] ${isListening || isSpeaking ? 'text-[#60a5fa] animate-[blink_1s_infinite]' : 'text-slate-500'}`}>
-                {isListening ? "Listening..." : isSpeaking ? "Speaking..." : "Waiting..."}
-              </p>
-              <p className="text-center text-[10px] text-white/50 font-medium italic leading-none">
-                {currentStep === 'menu' ? 'Select your option' : currentStep === 'awaiting_problem' ? 'Please describe your concern' : 'Processing request...'}
+            <div className="flex justify-center flex-col items-center gap-3">
+              <div className={`px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-[0.2em] ${isListening || isSpeaking ? 'text-primary animate-pulse' : 'text-slate-500'}`}>
+                {isListening ? "Listening..." : isSpeaking ? "Speaking..." : "Idle"}
+              </div>
+              <p className="text-center text-[10px] font-bold italic leading-none opacity-50" style={{ color: 'var(--text-title)' }}>
+                {currentStep === 'menu' ? 'Select interface option' : currentStep === 'awaiting_problem' ? 'Transmit concern data' : 'Processing signal...'}
               </p>
             </div>
           </div>

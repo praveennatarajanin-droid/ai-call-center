@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation, Link } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
 import { 
   LayoutDashboard, PhoneCall, Users, BarChart3, 
-  Settings, PhoneIncoming, Bell, Search, User, Activity, HeartPulse, LogOut, Radio
+  Settings, PhoneIncoming, Bell, Search, User, Activity, HeartPulse, LogOut, Radio,
+  Sun, Moon
 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import CallLogs from './pages/CallLogs';
@@ -12,23 +13,24 @@ import Simulator from './pages/Simulator';
 import UserDashboard from './pages/UserDashboard';
 import Login from './pages/Login';
 import LiveCalls from './pages/LiveCalls';
-
 import WebVoiceButton from './components/WebVoiceButton';
 
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
 const Sidebar = ({ role }: { role: string }) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const adminNavItems = [
-    { icon: LayoutDashboard, label: 'Systems', path: '/admin' },
-    { icon: Radio, label: 'Live Calls', path: '/admin/live-calls' },
-    { icon: PhoneCall, label: 'History', path: '/admin/history' },
-    { icon: Users, label: 'Directory', path: '/admin/directory' },
-    { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
-    { icon: PhoneIncoming, label: 'Simulator', path: '/admin/simulator' },
+    { icon: LayoutDashboard, label: 'Systems',   path: '/admin' },
+    { icon: Radio,           label: 'Live Calls', path: '/admin/live-calls' },
+    { icon: PhoneCall,       label: 'History',    path: '/admin/history' },
+    { icon: Users,           label: 'Directory',  path: '/admin/directory' },
+    { icon: BarChart3,       label: 'Analytics',  path: '/admin/analytics' },
+    { icon: PhoneIncoming,   label: 'Simulator',  path: '/admin/simulator' },
   ];
 
   const userNavItems = [
-    { icon: HeartPulse, label: 'Health Overview', path: '/' },
+    { icon: HeartPulse, label: 'Health Overview', path: '/user' },
   ];
 
   const navItems = role === 'ADMIN' ? adminNavItems : userNavItems;
@@ -41,119 +43,173 @@ const Sidebar = ({ role }: { role: string }) => {
   };
 
   return (
-    <div className="w-72 bg-black border-r border-white/10 flex flex-col h-screen relative z-[999] pointer-events-auto">
-      <div className="p-8 flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-yellow-400 to-yellow-600 flex items-center justify-center text-black font-black text-2xl shadow-xl">
+    <div style={{ 
+      width: '288px', 
+      minWidth: '288px', 
+      position: 'fixed', 
+      left: 0, 
+      top: 0, 
+      height: '100vh', 
+      zIndex: 200, 
+      background: 'var(--sidebar-bg)', 
+      borderRight: '1px solid var(--border-color)', 
+      display: 'flex', 
+      flexDirection: 'column',
+      transition: 'all 0.3s'
+    }}>
+      {/* Logo */}
+      <div style={{ padding: '32px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #facc15, #ca8a04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '24px', color: '#000' }}>
           N
         </div>
         <div>
-          <span className="text-xl font-bold block leading-none text-white">Nexus</span>
-          <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Health Systems</span>
-        </div>
-      </div>
-      
-      <div className="flex-1 px-4 space-y-1.5 mt-4 overflow-y-auto">
-        <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">
-          {role === 'ADMIN' ? 'Core Architecture' : 'Monitoring'}
-        </p>
-        <div className="space-y-1.5">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => console.log("Sidebar clicked: " + item.label)}
-              className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 group border block no-underline cursor-pointer pointer-events-auto ${
-                isActive(item.path) 
-                  ? 'bg-yellow-400 text-black border-yellow-400 shadow-[0_0_20px_rgba(252,225,0,0.2)]' 
-                  : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent'
-              }`}
-            >
-              <item.icon size={20} className={`transition-transform group-hover:scale-110 ${isActive(item.path) ? 'text-black' : 'text-slate-400 group-hover:text-white'}`} />
-              <span className="font-bold text-sm">{item.label}</span>
-            </Link>
-          ))}
+          <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-title)', display: 'block' }}>Nexus</span>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Health Systems</span>
         </div>
       </div>
 
-      <div className="p-6">
-        <div className="p-4 rounded-2xl bg-white/5 border border-white/5 mb-4">
-          <p className="text-xs font-bold text-white mb-1 text-center">System Healthy</p>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 w-[98%]"></div>
-            </div>
+      {/* Nav */}
+      <div style={{ flex: 1, padding: '0 16px', overflowY: 'auto' }}>
+        <p style={{ padding: '0 16px 16px', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+          {role === 'ADMIN' ? 'Core Architecture' : 'Monitoring'}
+        </p>
+        {navItems.map((item) => {
+          const active = isActive(item.path);
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                marginBottom: '6px',
+                textDecoration: 'none',
+                fontWeight: 700,
+                fontSize: '14px',
+                transition: 'all 0.2s',
+                background: active ? '#FCE100' : 'transparent',
+                color: active ? '#000' : 'var(--text-muted)',
+                border: active ? '1px solid #FCE100' : '1px solid transparent',
+                cursor: 'pointer',
+                position: 'relative',
+                zIndex: 201,
+              }}
+            >
+              <item.icon size={20} style={{ color: active ? '#000' : 'var(--text-muted)', flexShrink: 0 }} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Bottom */}
+      <div style={{ padding: '24px' }}>
+        <div style={{ padding: '16px', borderRadius: '16px', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+          <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-title)', textAlign: 'center', marginBottom: '8px' }}>System Healthy</p>
+          <div style={{ height: '6px', background: 'var(--border-color)', borderRadius: '100px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '98%', background: '#10b981', borderRadius: '100px' }} />
           </div>
         </div>
-        
         {role === 'ADMIN' && (
-          <div className="mt-4 flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer">
-            <Settings size={20} />
-            <span className="font-semibold text-sm">Parameters</span>
-          </div>
+          <Link 
+            to="/admin/simulator"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '12px', 
+              padding: '12px 16px', 
+              borderRadius: '12px', 
+              color: isActive('/admin/simulator') ? '#000' : 'var(--text-muted)', 
+              background: isActive('/admin/simulator') ? '#FCE100' : 'transparent',
+              textDecoration: 'none',
+              cursor: 'pointer', 
+              transition: 'all 0.2s' 
+            }}
+            onMouseOver={(e) => { if(!isActive('/admin/simulator')) e.currentTarget.style.background = 'var(--glass-bg)'; }}
+            onMouseOut={(e) => { if(!isActive('/admin/simulator')) e.currentTarget.style.background = 'transparent'; }}
+          >
+            <Settings size={20} style={{ color: isActive('/admin/simulator') ? '#000' : 'var(--text-muted)' }} />
+            <span style={{ fontWeight: 600, fontSize: '14px' }}>Parameters</span>
+          </Link>
         )}
       </div>
     </div>
   );
 };
 
-const Topbar = ({ role, setRole }: { role: string, setRole: (r: string) => void }) => {
+// ─── Topbar ───────────────────────────────────────────────────────────────────
+const Topbar = ({ role, setRole, theme, toggleTheme }: { role: string; setRole: (r: string) => void, theme: string, toggleTheme: () => void }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     navigate('/login');
-    window.location.reload();
   };
 
   return (
-    <header className="h-24 bg-black/20 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-10 sticky top-0 z-40">
-      <div className="flex items-center gap-8">
-        <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-white/5 border border-white/5 rounded-xl">
-          <Search size={16} className="text-slate-500" />
-          <input 
-            type="text" 
-            placeholder="Search system nodes..." 
-            className="bg-transparent border-none text-sm text-white focus:outline-none w-48"
-          />
-        </div>
+    <header style={{ 
+      height: '80px', 
+      background: 'var(--topbar-bg)', 
+      backdropFilter: 'blur(20px)', 
+      borderBottom: '1px solid var(--border-color)', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'space-between', 
+      padding: '0 40px', 
+      flexShrink: 0,
+      transition: 'all 0.3s',
+      position: 'relative',
+      zIndex: 500
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+        <Search size={16} color="var(--text-muted)" />
+        <input
+          type="text"
+          placeholder="Search system nodes..."
+          style={{ background: 'transparent', border: 'none', fontSize: '14px', color: 'var(--text-title)', outline: 'none', width: '180px' }}
+        />
       </div>
-      
-      <div className="flex items-center gap-6">
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
         <WebVoiceButton userType={role === 'ADMIN' ? 'admin' : 'parent'} />
-        <div className="flex items-center gap-4 border-r border-white/10 pr-6 mr-2 text-slate-400">
-           <Bell size={20} />
-           <Activity size={20} />
+
+        {/* Theme Toggle */}
+        <button 
+          onClick={toggleTheme}
+          style={{ 
+            background: 'var(--glass-bg)', 
+            border: '1px solid var(--border-color)', 
+            borderRadius: '10px', 
+            padding: '8px', 
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text-title)',
+            transition: 'all 0.2s'
+          }}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, borderRight: '1px solid var(--border-color)', paddingRight: '24px', color: 'var(--text-muted)' }}>
+          <Bell size={20} />
+          <Activity size={20} />
         </div>
 
-        {/* ROLE TOGGLE FOR DEMO */}
-        <div className="flex items-center gap-3 pr-4 border-r border-white/10 mr-2">
-          <span className="text-xs font-bold text-slate-500">View as:</span>
-          <select 
-            value={role} 
-            onChange={(e) => {
-              const newRole = e.target.value;
-              setRole(newRole);
-              localStorage.setItem('role', newRole);
-              navigate(newRole === 'ADMIN' ? '/admin' : '/');
-            }}
-            className="bg-white/5 border border-white/10 rounded-lg text-white text-xs px-2 py-1 outline-none cursor-pointer"
-          >
-            <option value="USER">Child / User</option>
-            <option value="ADMIN">Administrator</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-3 pl-2 group cursor-pointer" onClick={handleLogout}>
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-white group-hover:text-yellow-400 transition-colors">
-              {role === 'ADMIN' ? 'Commander' : 'Family Member'}
-            </p>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1 justify-end group-hover:text-red-400">
+        {/* User / Logout */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={handleLogout}>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-title)' }}>{role === 'ADMIN' ? 'Commander' : 'Family Member'}</p>
+            <p style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
               <LogOut size={10} /> Logout
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 group-hover:text-red-400">
+          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
             <User size={20} />
           </div>
         </div>
@@ -162,15 +218,23 @@ const Topbar = ({ role, setRole }: { role: string, setRole: (r: string) => void 
   );
 };
 
-const LayoutWrapper = ({ children, role, setRole }: { children: React.ReactNode, role: string, setRole: (r: string) => void }) => {
+// ─── Admin Guard + Layout ────────────────────────────────────────────────────
+const RequireAdmin = ({ role, setRole, theme, toggleTheme }: { role: string; setRole: (r: string) => void, theme: string, toggleTheme: () => void }) => {
+  const token = localStorage.getItem('token');
+  const savedRole = localStorage.getItem('role');
+
+  if (!token || savedRole !== 'ADMIN') {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
-    <div className="flex h-screen overflow-hidden bg-black text-slate-200 selection:bg-yellow-400/30">
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-main)', color: 'var(--text-main)', transition: 'all 0.3s' }}>
       <Sidebar role={role} />
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <Topbar role={role} setRole={setRole} />
-        <main className="flex-1 overflow-y-auto p-10 relative z-0">
-          <div className="max-w-7xl mx-auto">
-            {children}
+      <div style={{ flex: 1, marginLeft: '288px', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+        <Topbar role={role} setRole={setRole} theme={theme} toggleTheme={toggleTheme} />
+        <main style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
+          <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+            <Outlet />
           </div>
         </main>
       </div>
@@ -178,75 +242,75 @@ const LayoutWrapper = ({ children, role, setRole }: { children: React.ReactNode,
   );
 };
 
-const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role: string }) => {
-  const token = localStorage.getItem('token');
-  const userRole = localStorage.getItem('role') || role;
-
-  if (!token || userRole !== 'ADMIN') {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
+// ─── User Layout ──────────────────────────────────────────────────────────────
+const UserLayout = ({ role, setRole, theme, toggleTheme }: { role: string; setRole: (r: string) => void, theme: string, toggleTheme: () => void }) => {
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-main)', color: 'var(--text-main)', transition: 'all 0.3s' }}>
+      <Sidebar role={role} />
+      <div style={{ flex: 1, marginLeft: '288px', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+        <Topbar role={role} setRole={setRole} theme={theme} toggleTheme={toggleTheme} />
+        <main style={{ flex: 1, overflowY: 'auto', padding: '40px' }}>
+          <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
 };
 
+// ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [role, setRole] = useState('ADMIN'); 
-  const location = useLocation();
+  const [role, setRole] = useState<string>(() => {
+    return localStorage.getItem('role') || 'ADMIN';
+  });
+
+  const [theme, setTheme] = useState<string>(() => {
+    return localStorage.getItem('theme') || 'dark';
+  });
 
   useEffect(() => {
-    const savedRole = localStorage.getItem('role');
-    if (savedRole) {
-      setRole(savedRole);
-    }
-  }, []);
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
-  // Force scroll to top on navigation
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   return (
-    <Routes key={location.pathname}>
+    <Routes>
+      {/* Public */}
       <Route path="/login" element={<Login />} />
-      
-      {/* Flat Route Structure with Layout Wrapper */}
-      {/* Admin Routes */}
-      <Route path="/admin" element={
-        <ProtectedRoute role={role}>
-          <LayoutWrapper role={role} setRole={setRole}><Dashboard /></LayoutWrapper>
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/live-calls" element={
-        <ProtectedRoute role={role}>
-          <LayoutWrapper role={role} setRole={setRole}><LiveCalls /></LayoutWrapper>
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/history" element={
-        <ProtectedRoute role={role}>
-          <LayoutWrapper role={role} setRole={setRole}><CallLogs /></LayoutWrapper>
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/directory" element={
-        <ProtectedRoute role={role}>
-          <LayoutWrapper role={role} setRole={setRole}><Customers /></LayoutWrapper>
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/analytics" element={
-        <ProtectedRoute role={role}>
-          <LayoutWrapper role={role} setRole={setRole}><Analytics /></LayoutWrapper>
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/simulator" element={
-        <ProtectedRoute role={role}>
-          <LayoutWrapper role={role} setRole={setRole}><Simulator /></LayoutWrapper>
-        </ProtectedRoute>
-      } />
 
-      {/* User Routes */}
-      <Route path="/" element={<LayoutWrapper role={role} setRole={setRole}><UserDashboard /></LayoutWrapper>} />
+      {/* Admin section — shared layout, child pages swap via <Outlet /> */}
+      <Route element={<RequireAdmin role={role} setRole={setRole} theme={theme} toggleTheme={toggleTheme} />}>
+        <Route path="/admin" element={<Dashboard />} />
+        <Route path="/admin/live-calls" element={<LiveCalls />} />
+        <Route path="/admin/history" element={<CallLogs />} />
+        <Route path="/admin/directory" element={<Customers />} />
+        <Route path="/admin/analytics" element={<Analytics />} />
+        <Route path="/admin/simulator" element={<Simulator />} />
+      </Route>
+
+      {/* User section */}
+      <Route element={<UserLayout role={role} setRole={setRole} theme={theme} toggleTheme={toggleTheme} />}>
+        <Route path="/user" element={<UserDashboard />} />
+      </Route>
+
+      {/* Root redirect */}
+      <Route
+        path="/"
+        element={
+          <Navigate
+            to={localStorage.getItem('token') && localStorage.getItem('role') === 'ADMIN' ? '/admin' : '/login'}
+            replace
+          />
+        }
+      />
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to={role === 'ADMIN' ? "/admin" : "/"} replace />} />
+      <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>
   );
 }

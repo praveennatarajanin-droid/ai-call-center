@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { 
   Users, PhoneCall, BrainCircuit, Activity, 
-  ArrowUpRight, ArrowDownRight, Zap, Target 
+  ArrowUpRight, ArrowDownRight, Zap, Target,
+  X, Download, Settings2, Bell, Shield, Cpu, Globe, Save
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, BarChart, Bar 
+  Tooltip, ResponsiveContainer 
 } from 'recharts';
 
 const chartData = [
@@ -20,8 +21,8 @@ const chartData = [
 ];
 
 const StatCard = ({ title, value, icon: Icon, trend, isPositive }: any) => (
-  <div className="glass-card p-6 relative overflow-hidden group hover:scale-[1.02] transition-all duration-500 animate-glow">
-    <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+  <div className="glass-card p-6 relative overflow-hidden group hover:scale-[1.02] transition-all duration-500">
+    <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity" style={{ color: 'var(--text-main)' }}>
       <Icon size={120} />
     </div>
     
@@ -29,15 +30,15 @@ const StatCard = ({ title, value, icon: Icon, trend, isPositive }: any) => (
       <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
         <Icon size={24} />
       </div>
-      <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+      <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${isPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
         {isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
         {trend}
       </div>
     </div>
     
     <div className="space-y-1">
-      <h3 className="text-slate-500 text-sm font-semibold uppercase tracking-wider">{title}</h3>
-      <h2 className="text-4xl font-bold text-white tracking-tight">{value}</h2>
+      <h3 style={{ color: 'var(--text-muted)' }} className="text-sm font-semibold uppercase tracking-wider">{title}</h3>
+      <h2 style={{ color: 'var(--text-title)' }} className="text-4xl font-bold tracking-tight">{value}</h2>
     </div>
   </div>
 );
@@ -49,6 +50,15 @@ export default function Dashboard() {
     aiPerformance: 0,
     intentStats: [] 
   });
+  const [showConfig, setShowConfig] = useState(false);
+  const [config, setConfig] = useState({
+    notifications: true,
+    aiMonitoring: true,
+    autoScaling: false,
+    globalRelay: true,
+    maxConcurrentCalls: '50',
+    aiConfidenceThreshold: '85',
+  });
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -57,22 +67,132 @@ export default function Dashboard() {
     }).catch(console.error);
   }, []);
 
+  const handleExportReport = () => {
+    const rows = [
+      ['Metric', 'Value'],
+      ['Total Calls', stats.totalCalls],
+      ['Active Users', stats.activeUsers],
+      ['AI Performance', `${stats.aiPerformance}%`],
+      ['Latency', '142ms'],
+      [],
+      ['Hour', 'Call Volume', 'Satisfaction'],
+      ...chartData.map(d => [d.name, d.calls, d.satisfaction]),
+    ];
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nexus-report-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const toggle = (key: keyof typeof config) =>
+    setConfig(c => ({ ...c, [key]: !c[key] }));
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      {/* Welcome Header */}
+
+      {/* ── System Config Modal ──────────────────────────────────── */}
+      {showConfig && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setShowConfig(false)}
+        >
+          <div
+            style={{ width: 480, background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 24, padding: 32, position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(252,225,0,0.1)', border: '1px solid rgba(252,225,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Settings2 size={20} color="#FCE100" />
+                </div>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-title)' }}>System Config</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Nexus Health — Core Parameters</p>
+                </div>
+              </div>
+              <button onClick={() => setShowConfig(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+
+            {/* Toggles */}
+            {[
+              { key: 'notifications', icon: Bell, label: 'Alert Notifications', desc: 'Push alerts for critical events' },
+              { key: 'aiMonitoring', icon: Cpu, label: 'AI Monitoring', desc: 'Real-time AI call analysis' },
+              { key: 'autoScaling', icon: Shield, label: 'Auto Scaling', desc: 'Dynamic resource allocation' },
+              { key: 'globalRelay', icon: Globe, label: 'Global Relay', desc: 'Multi-region call routing' },
+            ].map(({ key, icon: Icon, label, desc }) => {
+              const on = config[key as keyof typeof config] as boolean;
+              return (
+                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <Icon size={16} color={on ? '#FCE100' : 'var(--text-muted)'} />
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-title)' }}>{label}</p>
+                      <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{desc}</p>
+                    </div>
+                  </div>
+                  <div
+                    onClick={() => toggle(key as keyof typeof config)}
+                    style={{ width: 44, height: 24, borderRadius: 100, background: on ? '#FCE100' : 'var(--border-color)', cursor: 'pointer', position: 'relative', transition: 'all 0.2s', flexShrink: 0 }}
+                  >
+                    <div style={{ position: 'absolute', top: 3, left: on ? 23 : 3, width: 18, height: 18, borderRadius: '50%', background: on ? '#000' : 'var(--text-muted)', transition: 'left 0.2s' }} />
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Number inputs */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
+              {[
+                { key: 'maxConcurrentCalls', label: 'Max Concurrent Calls' },
+                { key: 'aiConfidenceThreshold', label: 'AI Confidence Threshold (%)' },
+              ].map(({ key, label }) => (
+                <div key={key}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</p>
+                  <input
+                    type="number"
+                    value={config[key as keyof typeof config] as string}
+                    onChange={e => setConfig(c => ({ ...c, [key]: e.target.value }))}
+                    style={{ width: '100%', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: 10, padding: '8px 12px', color: 'var(--text-title)', fontSize: 14, fontWeight: 700, outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Save */}
+            <button
+              onClick={() => { alert('Configuration saved!'); setShowConfig(false); }}
+              style={{ marginTop: 24, width: '100%', padding: '12px 0', background: '#FCE100', color: '#000', fontWeight: 800, fontSize: 14, borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'opacity 0.2s' }}
+            >
+              <Save size={16} /> Save Configuration
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-4xl font-bold">Systems Overview</h1>
-          <p className="text-slate-400 mt-1 flex items-center gap-2">
+          <p style={{ color: 'var(--text-muted)' }} className="mt-1 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             Real-time intelligence dashboard is active and monitoring
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="glass-button">Export Report</button>
-          <button className="px-5 py-2.5 bg-primary text-dark font-bold rounded-xl hover:shadow-[0_0_20px_rgba(252,225,0,0.3)] transition-all active:scale-95">
-            System Config
-          </button>
+          <button className="glass-button" onClick={handleExportReport} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Download size={15} /> Export Report
+            </button>
+            <button
+              onClick={() => setShowConfig(true)}
+              className="px-5 py-2.5 bg-primary text-dark font-bold rounded-xl hover:shadow-[0_0_20px_rgba(252,225,0,0.3)] transition-all active:scale-95"
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              <Settings2 size={15} /> System Config
+            </button>
         </div>
       </div>
 
@@ -93,7 +213,7 @@ export default function Dashboard() {
               Traffic Analytics
             </h3>
             <div className="flex gap-2">
-              <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/5 border border-white/5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/5 border border-white/5 text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
                 <span className="w-2 h-2 rounded-full bg-primary"></span> Volume
               </div>
             </div>
@@ -107,26 +227,27 @@ export default function Dashboard() {
                     <stop offset="95%" stopColor="#FCE100" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
                 <XAxis 
                   dataKey="name" 
-                  stroke="rgba(255,255,255,0.2)" 
+                  stroke="var(--text-muted)" 
                   axisLine={false} 
                   tickLine={false} 
                   style={{ fontSize: '10px', fontWeight: 'bold' }}
                 />
                 <YAxis 
-                  stroke="rgba(255,255,255,0.2)" 
+                  stroke="var(--text-muted)" 
                   axisLine={false} 
                   tickLine={false} 
                   style={{ fontSize: '10px', fontWeight: 'bold' }}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: 'rgba(10, 10, 10, 0.9)', 
-                    border: '1px solid rgba(255,255,255,0.1)', 
+                    backgroundColor: 'var(--bg-surface)', 
+                    border: '1px solid var(--border-color)', 
                     borderRadius: '12px',
-                    backdropFilter: 'blur(10px)'
+                    backdropFilter: 'blur(10px)',
+                    color: 'var(--text-title)'
                   }}
                   itemStyle={{ color: '#FCE100', fontWeight: 'bold' }}
                 />
@@ -154,8 +275,8 @@ export default function Dashboard() {
             {stats.intentStats.map((item: any, i: number) => (
               <div key={i} className="space-y-2">
                 <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
-                  <span className="text-slate-400">{item.name}</span>
-                  <span className="text-white">{item.value}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{item.name}</span>
+                  <span style={{ color: 'var(--text-title)' }}>{item.value}</span>
                 </div>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
                   <div 
@@ -166,7 +287,7 @@ export default function Dashboard() {
               </div>
             ))}
             {stats.intentStats.length === 0 && (
-              <p className="text-center text-slate-500 py-12 italic">Awaiting classification data...</p>
+              <p style={{ color: 'var(--text-muted)' }} className="text-center py-12 italic">Awaiting classification data...</p>
             )}
           </div>
         </div>

@@ -8,30 +8,68 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: dark light;
+    --bg-main: #000000;
+    --bg-surface: #0A0A0A;
+    --text-main: #cbd5e1;
+    --text-title: #ffffff;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.05);
+    --sidebar-bg: #000000;
+    --topbar-bg: rgba(0, 0, 0, 0.3);
+  }
+
+  [data-theme='light'] {
+    color-scheme: light;
+    --bg-main: #f8fafc;
+    --bg-surface: #ffffff;
+    --text-main: #334155;
+    --text-title: #0f172a;
+    --text-muted: #64748b;
+    --border-color: rgba(0, 0, 0, 0.05);
+    --glass-bg: rgba(0, 0, 0, 0.02);
+    --glass-border: rgba(0, 0, 0, 0.05);
+    --sidebar-bg: #ffffff;
+    --topbar-bg: rgba(255, 255, 255, 0.8);
   }
   
   body {
-    @apply bg-black text-neutral-300 antialiased font-sans;
+    @apply antialiased font-sans;
+    background-color: var(--bg-main);
+    color: var(--text-main);
     background-image: 
       radial-gradient(at 0% 0%, rgba(252, 225, 0, 0.05) 0px, transparent 50%),
       radial-gradient(at 100% 0%, rgba(252, 225, 0, 0.03) 0px, transparent 50%);
     min-height: 100vh;
     margin: 0;
+    transition: background-color 0.3s, color 0.3s;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply text-white tracking-tight;
+    color: var(--text-title);
+    @apply tracking-tight;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl;
+    background-color: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    @apply backdrop-blur-xl rounded-2xl shadow-sm;
+    transition: all 0.3s;
   }
   
   .glass-button {
-    @apply px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all duration-300 text-sm font-medium active:scale-95;
+    background-color: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    @apply px-4 py-2 rounded-xl transition-all duration-300 text-sm font-medium active:scale-95;
+  }
+
+  .glass-button:hover {
+    background-color: rgba(128, 128, 128, 0.1);
   }
 
   .status-badge {
@@ -48,11 +86,12 @@
   background: transparent; 
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1); 
+  background: var(--text-muted);
+  opacity: 0.2;
   border-radius: 100px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2); 
+  opacity: 0.5;
 }
 @keyframes pulseOrb {
   0% { transform: scale(1); opacity: 0.8; }
@@ -68,4 +107,24 @@
 .modal-overlay {
   z-index: 9999;
   pointer-events: auto;
+}
+
+/* Sidebar Specific Overrides */
+.fixed.w-72 {
+  z-index: 1000 !important;
+  isolation: isolate;
+}
+
+.fixed.w-72 a {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 1001;
+}
+
+/* Prevent layout shift/overlap */
+.flex-1.ml-72 {
+  min-width: 0;
+  position: relative;
+  z-index: 1;
 }
